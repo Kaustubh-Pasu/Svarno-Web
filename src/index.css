@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-background-700;
+  }
+  
+  body {
+    @apply bg-background-950 text-background-100 font-sans;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .luxury-button {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-2xl font-semibold text-base transition-all duration-300 ease-out relative overflow-hidden shadow-lg;
+  }
+  
+  .luxury-button.primary {
+    @apply bg-gradient-to-br from-primary-500 to-primary-600 text-background-950 hover:shadow-xl hover:-translate-y-0.5;
+  }
+  
+  .luxury-button.secondary {
+    @apply bg-background-800 text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-background-950;
+  }
+  
+  .luxury-card {
+    @apply bg-background-800 rounded-3xl p-6 shadow-lg border border-background-700 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl;
+  }
+  
+  .luxury-card.elevated {
+    @apply shadow-2xl;
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary-500 to-primary-300 bg-clip-text text-transparent;
+  }
+  
+  .glass {
+    @apply backdrop-blur-md bg-background-900/50 border border-background-700/50;
+  }
+  
+  .dashboard-grid {
+    @apply grid gap-6;
+  }
+  
+  .dashboard-card {
+    @apply luxury-card h-full flex flex-col;
+  }
+  
+  .progress-bar {
+    @apply w-full bg-background-700 rounded-full overflow-hidden;
+  }
+  
+  .progress-fill {
+    @apply h-full bg-gradient-to-r from-primary-500 to-primary-400 rounded-full transition-all duration-500 ease-out;
+  }
+  
+  .stat-card {
+    @apply luxury-card text-center;
+  }
+  
+  .activity-item {
+    @apply flex items-center space-x-3 p-3 bg-background-800 rounded-xl hover:bg-background-700 transition-colors;
+  }
+  
+  .market-status {
+    @apply flex items-center space-x-2;
+  }
+  
+  .market-status.open {
+    @apply text-green-500;
+  }
+  
+  .market-status.closed {
+    @apply text-red-500;
+  }
+}
+
