@@ -4,6 +4,7 @@ import HomePage from './pages/HomePage'
 import AuthCallback from './pages/AuthCallback'
 import AuthPage from './pages/AuthPage'
 import DashboardPage from './pages/DashboardPage'
+import SpendingPage from './pages/SpendingPage'
 import TestAuth from './pages/TestAuth'
 import ErrorBoundary from './components/ErrorBoundary'
 
@@ -20,6 +21,7 @@ function App() {
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/spending" element={<SpendingPage />} />
               <Route path="/test-auth" element={<TestAuth />} />
               {/* Add more routes here as we build them */}
             </Routes>

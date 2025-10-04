@@ -1,0 +1,11 @@
+﻿name,format,type,description
+id,uuid,string,
+user_id,uuid,string,
+amount,numeric,number,
+category,text,string,
+description,text,string,
+date,date,string,
+type,text,string,
+source,text,string,
+created_at,timestamp with time zone,string,
+updated_at,timestamp with time zone,string,

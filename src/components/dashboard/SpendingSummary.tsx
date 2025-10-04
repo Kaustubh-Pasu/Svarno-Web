@@ -1,5 +1,6 @@
 import React from 'react'
 import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import { CreditCard, TrendingDown, AlertCircle, Plus } from 'lucide-react'
 import { Transaction, Budget } from '../../types/dashboard'
 
@@ -9,6 +10,7 @@ interface SpendingSummaryProps {
 }
 
 const SpendingSummary: React.FC<SpendingSummaryProps> = ({ transactions, budgets }) => {
+  const navigate = useNavigate()
   // Calculate spending from transactions
   const recentSpending = transactions
     .filter(t => t.type === 'expense')
@@ -131,10 +133,16 @@ const SpendingSummary: React.FC<SpendingSummaryProps> = ({ transactions, budgets
       {/* Quick Actions */}
       <div className="pt-4 border-t border-background-700">
         <div className="flex space-x-2">
-          <button className="flex-1 bg-red-500 hover:bg-red-600 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors">
+          <button 
+            onClick={() => navigate('/spending')}
+            className="flex-1 bg-red-500 hover:bg-red-600 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors"
+          >
             Add Expense
           </button>
-          <button className="flex-1 bg-background-700 hover:bg-background-600 text-background-100 text-sm font-medium py-2 px-3 rounded-lg transition-colors">
+          <button 
+            onClick={() => navigate('/spending')}
+            className="flex-1 bg-background-700 hover:bg-background-600 text-background-100 text-sm font-medium py-2 px-3 rounded-lg transition-colors"
+          >
             View All
           </button>
         </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { CheckCircle, XCircle, Loader2, ArrowRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
 
 const AuthCallback: React.FC = () => {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
@@ -11,45 +12,89 @@ const AuthCallback: React.FC = () => {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        // Get URL parameters
+        console.log('🔄 AuthCallback: Starting OAuth callback handling...')
+        console.log('🔄 AuthCallback: Current URL:', window.location.href)
+        
+        // Check URL parameters
         const urlParams = new URLSearchParams(window.location.search)
-        const accessToken = urlParams.get('access_token')
-        const refreshToken = urlParams.get('refresh_token')
+        const code = urlParams.get('code')
         const error = urlParams.get('error')
         const errorDescription = urlParams.get('error_description')
+        
+        console.log('🔄 AuthCallback: URL parameters:', { code, error, errorDescription })
 
-        console.log('Auth callback parameters:', { accessToken, refreshToken, error, errorDescription })
-
-        // Check for error parameters first
         if (error) {
+          console.error('🔄 AuthCallback: OAuth error:', error, errorDescription)
           throw new Error(errorDescription || error)
         }
 
-        // If no access token, show demo success (for testing purposes)
-        if (!accessToken) {
-          console.log('No tokens found - showing demo success state')
-          await new Promise(resolve => setTimeout(resolve, 2000))
-          setStatus('success')
-          return
+        // Let Supabase automatically handle the OAuth callback
+        // This will process the code and create a session
+        console.log('🔄 AuthCallback: Letting Supabase handle OAuth callback...')
+        
+        // Listen for auth state changes first
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            console.log('🔄 AuthCallback: Auth state changed:', { event, session })
+            
+            if (event === 'SIGNED_IN' && session) {
+              console.log('🔄 AuthCallback: User signed in successfully')
+              setStatus('success')
+              
+              // Redirect to dashboard after a short delay
+              setTimeout(() => {
+                navigate('/dashboard')
+              }, 2000)
+            } else if (event === 'SIGNED_OUT') {
+              console.log('🔄 AuthCallback: User signed out')
+              setStatus('error')
+              setErrorMessage('Authentication failed. Please try again.')
+            }
+            
+            subscription.unsubscribe()
+          }
+        )
+
+        // Also check for existing session immediately
+        const { data, error: sessionError } = await supabase.auth.getSession()
+        
+        console.log('🔄 AuthCallback: Existing session check:', { data, error: sessionError })
+
+        if (sessionError) {
+          console.error('🔄 AuthCallback: Error getting session:', sessionError)
+          throw new Error(sessionError.message)
         }
 
-        // Real confirmation flow (when tokens are present)
-        console.log('Processing authentication with tokens')
-        
-        // Simulate a brief delay to show the loading state
-        await new Promise(resolve => setTimeout(resolve, 1500))
-
-        setStatus('success')
+        if (data.session) {
+          console.log('🔄 AuthCallback: Session already exists, user authenticated')
+          setStatus('success')
+          
+          // Redirect to dashboard after a short delay
+          setTimeout(() => {
+            navigate('/dashboard')
+          }, 2000)
+        } else {
+          console.log('🔄 AuthCallback: No existing session, waiting for auth state change...')
+          
+          // Set a timeout in case the auth state change doesn't fire
+          setTimeout(() => {
+            if (status === 'loading') {
+              console.log('🔄 AuthCallback: Timeout reached, no auth state change detected')
+              setStatus('error')
+              setErrorMessage('Authentication timed out. Please try again.')
+            }
+          }, 10000) // 10 second timeout
+        }
 
       } catch (error) {
-        console.error('Authentication error:', error)
+        console.error('🔄 AuthCallback: Authentication error:', error)
         setErrorMessage(error instanceof Error ? error.message : 'An unexpected error occurred')
         setStatus('error')
       }
     }
 
     handleAuthCallback()
-  }, [])
+  }, [navigate, status])
 
   const goToDashboard = () => {
     navigate('/dashboard')
@@ -114,7 +159,7 @@ const AuthCallback: React.FC = () => {
                   Welcome to Svarno! 🎉
                 </h1>
                 <p className="text-background-300 mb-6">
-                  Your account has been successfully created. You're ready to start your financial literacy journey!
+                  You've successfully signed in! You're ready to start your financial literacy journey!
                 </p>
                 <motion.button
                   whileHover={{ scale: 1.05 }}

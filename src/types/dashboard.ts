@@ -24,12 +24,12 @@ export interface Allocation {
 
 export interface Transaction {
   id: string
-  type: 'buy' | 'sell' | 'expense' | 'income'
+  type: 'expense' | 'income'
   amount: number
   description: string
   category?: string
   date: string
-  symbol?: string
+  source?: string
 }
 
 export interface Budget {

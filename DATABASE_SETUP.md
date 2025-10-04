@@ -71,13 +71,14 @@ If you want to extend the application with more features, you can create these a
 CREATE TABLE transactions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  type TEXT NOT NULL CHECK (type IN ('buy', 'sell', 'expense', 'income')),
-  amount DECIMAL(10,2) NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('expense', 'income')),
+  amount NUMERIC NOT NULL,
   description TEXT NOT NULL,
   category TEXT,
-  symbol TEXT,
-  date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  date DATE NOT NULL,
+  source TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Budgets table

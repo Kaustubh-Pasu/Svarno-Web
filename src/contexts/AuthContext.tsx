@@ -21,14 +21,14 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Fallback timeout to prevent infinite loading
+  // Fallback timeout to prevent infinite loading (increased to 15 seconds)
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (loading) {
         console.log('⚠️ AuthContext: Loading timeout reached, forcing loading to false')
         setLoading(false)
       }
-    }, 3000) // 3 second timeout
+    }, 15000) // 15 second timeout
 
     return () => clearTimeout(timeout)
   }, [loading])
@@ -42,7 +42,8 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (session?.user) {
         console.log('🔄 AuthContext: Found existing session, fetching user profile...')
-        await fetchUserProfile(session.user.id)
+        // Pass the session user data directly to avoid hanging on getSession()
+        await fetchUserProfile(session.user.id, session.user)
       } else {
         console.log('🔄 AuthContext: No existing session found')
         setUser(null)
@@ -60,7 +61,8 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         if (session?.user) {
           console.log('🔄 AuthContext: New session detected, fetching user profile...')
-          await fetchUserProfile(session.user.id)
+          // Pass the session user data directly to avoid hanging on getSession()
+          await fetchUserProfile(session.user.id, session.user)
         } else {
           console.log('🔄 AuthContext: No session, clearing user')
           setUser(null)
@@ -73,62 +75,89 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => subscription.unsubscribe()
   }, [])
 
-  const fetchUserProfile = async (userId: string) => {
+  const fetchUserProfile = async (userId: string, sessionUser?: any) => {
+    console.log('👤 fetchUserProfile: Starting for userId:', userId)
+    
     try {
-      console.log('👤 fetchUserProfile: Starting for userId:', userId)
+      // Create a basic user immediately from the session data
+      // This ensures the user is set even if database operations fail
+      let userData = sessionUser
       
-      // Try to fetch user profile directly first (most common case)
+      // If no session user provided, try to get it from session
+      if (!userData) {
+        console.log('👤 fetchUserProfile: No session user provided, getting from session...')
+        const { data: session } = await supabase.auth.getSession()
+        userData = session.session?.user
+      }
+      
+      if (userData) {
+        console.log('👤 fetchUserProfile: Found user data, creating basic user')
+        
+        const basicUser: User = {
+          id: userData.id,
+          name: userData.user_metadata?.name || 
+                userData.user_metadata?.full_name || 
+                userData.email?.split('@')[0] || 
+                'User',
+          age: userData.user_metadata?.age || 16,
+          email: userData.email || '',
+          level: 1,
+          experience: 0,
+          certificates: []
+        }
+        
+        console.log('👤 fetchUserProfile: Created basic user:', basicUser)
+        setUser(basicUser)
+        
+        // Try to fetch from database in the background (non-blocking)
+        console.log('👤 fetchUserProfile: Starting background database operations...')
+        handleDatabaseOperations(userId, basicUser)
+        
+        console.log('👤 fetchUserProfile: Function complete - user set immediately')
+        return
+      } else {
+        console.error('👤 fetchUserProfile: No user data found')
+        throw new Error('No user data available')
+      }
+      
+    } catch (error) {
+      console.error('👤 fetchUserProfile: Error fetching user profile:', error)
+      console.log('👤 fetchUserProfile: Function complete - error handled')
+    }
+  }
+
+  // Separate function for database operations (truly non-blocking)
+  const handleDatabaseOperations = async (userId: string, basicUser: User) => {
+    try {
+      console.log('👤 handleDatabaseOperations: Starting for userId:', userId)
+      
+      // Try to fetch from database
       const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .single()
 
-      console.log('👤 fetchUserProfile: Database query result:', { data, error })
-
       if (!error && data) {
-        console.log('👤 fetchUserProfile: Found user in database, setting user:', data)
+        console.log('👤 handleDatabaseOperations: Found user in database, updating user:', data)
         setUser(data as User)
-        return
-      }
-
-      // If user doesn't exist in database, create from auth metadata
-      if (error?.code === 'PGRST116') {
-        console.log('👤 fetchUserProfile: User not found in database, creating from auth metadata')
-        const { data: authUser } = await supabase.auth.getUser()
-        
-        console.log('👤 fetchUserProfile: Auth user data:', authUser)
-        
-        if (authUser.user) {
-          const basicUser: User = {
-            id: authUser.user.id,
-            name: authUser.user.user_metadata?.name || 'User',
-            age: authUser.user.user_metadata?.age || 16,
-            email: authUser.user.email || '',
-            level: 1,
-            experience: 0,
-            certificates: []
-          }
-          
-          console.log('👤 fetchUserProfile: Created basic user from auth metadata:', basicUser)
-          setUser(basicUser)
-          
-          // Try to create user profile in database (non-blocking)
-          createUserProfile(userId, {
-            name: basicUser.name,
-            age: basicUser.age,
-            email: basicUser.email
-          }).catch(dbError => {
-            console.log('👤 fetchUserProfile: Could not create user profile in database:', dbError)
-          })
-        }
+      } else if (error?.code === 'PGRST116') {
+        // User doesn't exist in database, create it
+        console.log('👤 handleDatabaseOperations: User not in database, creating profile...')
+              try {
+                const result = await createUserProfile(userId, {
+                  name: basicUser.name,
+                  email: basicUser.email
+                })
+                console.log('👤 handleDatabaseOperations: User profile created in database:', result)
+              } catch (dbError) {
+                console.log('👤 handleDatabaseOperations: Could not create user profile in database:', dbError)
+              }
       } else {
-        console.error('👤 fetchUserProfile: Database error:', error)
-        throw error
+        console.log('👤 handleDatabaseOperations: Database error, keeping basic user:', error)
       }
-    } catch (error) {
-      console.error('👤 fetchUserProfile: Error fetching user profile:', error)
-      setUser(null)
+    } catch (dbError) {
+      console.log('👤 handleDatabaseOperations: Database operation failed, keeping basic user:', dbError)
     }
   }
 
@@ -207,7 +236,11 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo: `http://localhost:3000/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
       })
 

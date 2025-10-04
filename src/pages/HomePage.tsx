@@ -18,6 +18,12 @@ import { useAuth } from '../hooks/useAuth'
 const HomePage: React.FC = () => {
   const { user, loading } = useAuth()
   
+  // Move useInView hook to the top level - before any conditional returns
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1,
+  })
+  
   console.log('🏠 HomePage: Rendering with user:', user, 'loading:', loading)
   
   if (loading) {
@@ -64,11 +70,6 @@ const HomePage: React.FC = () => {
     { number: '100%', label: 'Risk-Free Learning' },
     { number: 'ESG', label: 'Focused Investing' }
   ]
-
-  const [ref, inView] = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  })
 
   return (
     <div className="min-h-screen bg-background-950">

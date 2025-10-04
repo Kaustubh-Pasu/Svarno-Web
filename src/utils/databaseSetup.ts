@@ -39,6 +39,8 @@ export const createUserProfile = async (userId: string, userData: {
   email: string
 }) => {
   try {
+    console.log('👤 createUserProfile: Creating user profile for:', { userId, userData })
+    
     const { data, error } = await supabase
       .from('users')
       .insert([{
@@ -52,15 +54,17 @@ export const createUserProfile = async (userId: string, userData: {
       .select()
       .single()
     
+    console.log('👤 createUserProfile: Insert result:', { data, error })
+    
     if (error) {
-      console.error('Error creating user profile:', error)
+      console.error('👤 createUserProfile: Error creating user profile:', error)
       return { success: false, error: error.message }
     }
     
-    console.log('User profile created:', data)
+    console.log('👤 createUserProfile: User profile created successfully:', data)
     return { success: true, data }
   } catch (error) {
-    console.error('Error creating user profile:', error)
+    console.error('👤 createUserProfile: Exception creating user profile:', error)
     return { success: false, error: 'Failed to create user profile' }
   }
 }
